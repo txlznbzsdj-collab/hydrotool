@@ -6,8 +6,8 @@ HydroTool macOS PyInstaller 打包配置
 block_cipher = None
 
 a = Analysis(
-    ['src/hydrotool/cli/main.py'],
-    pathex=[],
+    ['../src/hydrotool/cli/main.py'],
+    pathex=['..'],
     binaries=[],
     datas=[],
     hiddenimports=[
