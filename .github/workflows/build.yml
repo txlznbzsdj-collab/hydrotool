@@ -1,0 +1,142 @@
+# HydroTool 跨平台打包工作流
+#
+# 当推送 v* 标签时自动触发：
+# - Windows → hydrotool.exe (PyInstaller) + hydrotool-setup.exe (Inno Setup)
+# - Linux   → hydrotool (PyInstaller) + .AppImage
+# - macOS   → hydrotool (PyInstaller) + .dmg
+#
+# 产物自动上传到 GitHub Release
+
+name: 跨平台打包
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:  # 手动触发
+
+jobs:
+  # ============================================================
+  # Windows 打包
+  # ============================================================
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 安装依赖
+        run: |
+          pip install -e ".[web]"
+          pip install pyinstaller
+
+      - name: 用 PyInstaller 打包
+        run: |
+          pyinstaller packaging/hydrotool-windows.spec
+
+      - name: 打包为安装程序 (Inno Setup)
+        run: |
+          # 安装 Inno Setup
+          choco install innosetup -y
+          # 编译安装脚本
+          iscc packaging/hydrotool-setup.iss
+
+      - name: 上传产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: hydrotool-windows
+          path: |
+            dist/hydrotool.exe
+            dist/Output/hydrotool-setup-*.exe
+
+  # ============================================================
+  # Linux 打包
+  # ============================================================
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 安装依赖
+        run: |
+          pip install -e ".[web]"
+          pip install pyinstaller
+
+      - name: 用 PyInstaller 打包
+        run: |
+          pyinstaller packaging/hydrotool-linux.spec
+
+      - name: 打包为 AppImage
+        uses: AppImageCrafters/action-appimage@master
+        with:
+          appdir: dist/hydrotool
+          output: hydrotool-x86_64.AppImage
+
+      - name: 上传产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: hydrotool-linux
+          path: |
+            dist/hydrotool
+            hydrotool-x86_64.AppImage
+
+  # ============================================================
+  # macOS 打包
+  # ============================================================
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: 安装依赖
+        run: |
+          pip install -e ".[web]"
+          pip install pyinstaller
+
+      - name: 用 PyInstaller 打包
+        run: |
+          pyinstaller packaging/hydrotool-macos.spec
+
+      - name: 上传产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: hydrotool-macos
+          path: dist/hydrotool.app
+
+  # ============================================================
+  # 发布到 GitHub Release
+  # ============================================================
+  release:
+    needs: [build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 下载所有平台的产物
+        uses: actions/download-artifact@v4
+
+      - name: 发布到 Release
+        run: |
+          gh release upload ${{ github.ref_name }} \
+            hydrotool-windows/hydrotool.exe \
+            hydrotool-windows/hydrotool-setup-*.exe \
+            hydrotool-linux/hydrotool-x86_64.AppImage \
+            hydrotool-macos/hydrotool.app
+        env:
+          GH_TOKEN: ${{ github.token }}
