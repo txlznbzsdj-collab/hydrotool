@@ -80,7 +80,6 @@ app = BUNDLE(
     a.datas,
     [],
     name='hydrotool.app',
-    icon='hydrotool.icns',
     bundle_identifier='dev.hydrotool.app',
     info_plist={
         'CFBundleName': 'HydroTool',
