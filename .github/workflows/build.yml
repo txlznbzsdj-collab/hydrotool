@@ -1,7 +1,7 @@
 # HydroTool 跨平台打包工作流
 #
 # 当推送 v* 标签时自动触发：
-# - Windows → hydrotool.exe + hydrotool-setup.exe (Inno Setup 安装包)
+# - Windows → hydrotool.exe
 # - Linux   → hydrotool 可执行文件
 # - macOS   → hydrotool macOS 可执行文件
 #
@@ -36,18 +36,10 @@ jobs:
       - name: PyInstaller 打包
         run: pyinstaller packaging/hydrotool-windows.spec
 
-      - name: 打包为安装程序 (Inno Setup)
-        run: |
-          choco install innosetup -y
-          iscc packaging/hydrotool-setup.iss
-        continue-on-error: true
-
-      - name: 上传到 Release
+      - name: 上传 hydrotool.exe 到 Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            dist/hydrotool.exe
-            dist/Output/hydrotool-setup-*.exe
+          files: dist/hydrotool.exe
 
   build-linux:
     runs-on: ubuntu-latest
