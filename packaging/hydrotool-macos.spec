@@ -1,0 +1,70 @@
+# -*- mode: python ; coding: utf-8 -*-
+"""
+HydroTool macOS PyInstaller 打包配置
+"""
+
+block_cipher = None
+
+a = Analysis(
+    ['src/hydrotool/cli/main.py'],
+    pathex=[],
+    binaries=[],
+    datas=[],
+    hiddenimports=[
+        'hydrotool',
+        'hydrotool.cli',
+        'hydrotool.cli.commands',
+        'hydrotool.cli.commands.device',
+        'hydrotool.cli.commands.flash',
+        'hydrotool.cli.commands.root',
+        'hydrotool.cli.commands.module',
+        'hydrotool.cli.commands.ai',
+        'hydrotool.cli.commands.hide',
+        'hydrotool.cli.commands.rom',
+        'hydrotool.core',
+        'hydrotool.core.device',
+        'hydrotool.core.adb',
+        'hydrotool.core.adb.client',
+        'hydrotool.core.fastboot',
+        'hydrotool.core.fastboot.client',
+        'hydrotool.backend',
+        'hydrotool.backend.app',
+        'hydrotool.backend.models',
+        'hydrotool.backend.routers',
+        'hydrotool.backend.routers.system',
+        'hydrotool.backend.routers.device',
+        'hydrotool.backend.routers.flash',
+        'hydrotool.backend.routers.root',
+        'hydrotool.backend.websocket',
+        'hydrotool.backend.websocket.device_stream',
+        'click',
+        'rich',
+        'pydantic',
+    ],
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=['tkinter', 'matplotlib', 'numpy', 'pandas', 'PIL'],
+    cipher=block_cipher,
+    noarchive=False,
+)
+
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+app = BUNDLE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    [],
+    name='hydrotool.app',
+    icon='packaging/hydrotool.icns',
+    bundle_identifier='dev.hydrotool.app',
+    info_plist={
+        'CFBundleName': 'HydroTool',
+        'CFBundleDisplayName': 'HydroTool',
+        'CFBundleVersion': '0.1.0',
+        'CFBundleShortVersionString': '0.1.0-alpha',
+    },
+)
