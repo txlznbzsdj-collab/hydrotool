@@ -34,6 +34,8 @@ class FastbootClient:
     async def _run(self, *args: str, timeout: int = 60) -> str:
         """执行 fastboot 命令"""
         cmd = [self._fastboot_path, *args]
+        if not shutil.which(self._fastboot_path):
+            raise FastbootError(f"Fastboot 未安装: {self._fastboot_path} 不存在", cmd=" ".join(cmd))
         try:
             proc = await asyncio.create_subprocess_exec(
                 *cmd,

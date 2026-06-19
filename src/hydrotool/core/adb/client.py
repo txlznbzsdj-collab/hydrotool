@@ -37,6 +37,8 @@ class AdbClient:
     async def _run(self, *args: str, timeout: int = 30) -> str:
         """执行 adb 命令"""
         cmd = [self._adb_path, *args]
+        if not shutil.which(self._adb_path):
+            raise AdbError(f"ADB 未安装: {self._adb_path} 不存在", cmd=" ".join(cmd))
         try:
             proc = await asyncio.create_subprocess_exec(
                 *cmd,
