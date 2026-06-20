@@ -42,8 +42,14 @@ jobs:
 
       - name: Inno Setup GUI 安装程序
         run: |
-          choco install innosetup -y --no-progress --limit-output
-          iscc packaging/hydrotool-setup.iss
+          choco install innosetup -y --no-progress --limit-output 2>$null
+          $iscc = Get-ChildItem -Path "C:\Program Files*\Inno Setup*\ISCC.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $iscc) { $iscc = (Get-Command iscc -ErrorAction SilentlyContinue).Source }
+          if ($iscc) {
+            & $iscc packaging\hydrotool-setup.iss
+          } else {
+            Write-Warning "Inno Setup not found, skipping GUI installer"
+          }
 
       - name: 上传到 Release
         uses: softprops/action-gh-release@v2
