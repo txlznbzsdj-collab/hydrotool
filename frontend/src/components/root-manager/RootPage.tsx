@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import {
-  Shield, ShieldCheck, ShieldAlert, Zap, Download, Loader2, CheckCircle2, Cpu, Layers,
+  Shield, ShieldCheck, ShieldAlert, Loader2, CheckCircle2, Cpu, Layers,
 } from 'lucide-react'
 
 const ROOT_METHODS = [
