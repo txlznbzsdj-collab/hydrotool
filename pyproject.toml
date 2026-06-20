@@ -35,12 +35,16 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+ai = [
+    "openai>=1.0",
+]
 web = [
     "fastapi>=0.110",
     "uvicorn[standard]>=0.27",
     "websockets>=12.0",
     "sqlmodel>=0.0.22",
     "httpx>=0.27",
+    "openai>=1.0",
 ]
 dev = [
     "pytest>=8.0",

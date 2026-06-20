@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
 import {
   Cpu,
@@ -14,12 +15,11 @@ import {
   Zap,
   Heart,
   ArrowRight,
+  Settings2,
+  Terminal,
+  XCircle,
 } from 'lucide-react'
 import type { Device, AiTarget, AiStep } from '@/types'
-
-interface AiAutoPageProps {
-  devices: Device[]
-}
 
 const TARGETS: { value: AiTarget; label: string; desc: string; icon: typeof Cpu }[] = [
   { value: 'detect', label: '仅检测', desc: '检查环境与设备，不执行操作', icon: Monitor },
@@ -28,57 +28,206 @@ const TARGETS: { value: AiTarget; label: string; desc: string; icon: typeof Cpu 
   { value: 'unbrick', label: '救砖恢复', desc: '检测设备模式并执行恢复', icon: Heart },
 ]
 
-const STEPS = [
-  { step: 1 as AiStep, title: '运行环境检测', desc: '检查 ADB、Fastboot、驱动是否就绪' },
-  { step: 2 as AiStep, title: '设备识别', desc: '自动检测设备型号与 BL 状态' },
-  { step: 3 as AiStep, title: '选择目标', desc: '选择您需要的操作' },
-  { step: 4 as AiStep, title: '自动执行', desc: '全自动完成所选操作' },
-]
+interface AiAutoPageProps {
+  devices: Device[]
+}
+
+interface ExecutionStep {
+  step: number
+  tool: string
+  args: Record<string, string>
+  result: string
+}
 
 export function AiAutoPage({ devices }: AiAutoPageProps) {
   const [step, setStep] = useState<AiStep>(1)
   const [target, setTarget] = useState<AiTarget>('detect')
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [steps, setSteps] = useState<ExecutionStep[]>([])
+  const [summary, setSummary] = useState('')
+  const [success, setSuccess] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleStart = () => {
-    if (target === 'detect') return
+  // Settings
+  const [showSettings, setShowSettings] = useState(false)
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('hydrotool_ai_key') || '')
+  const [baseUrl, setBaseUrl] = useState(() => localStorage.getItem('hydrotool_ai_url') || '')
+  const [model, setModel] = useState(() => localStorage.getItem('hydrotool_ai_model') || 'gpt-4o-mini')
+  const wsRef = useRef<WebSocket | null>(null)
+
+  // Cleanup WS on unmount
+  useEffect(() => {
+    return () => { wsRef.current?.close() }
+  }, [])
+
+  const saveSettings = () => {
+    localStorage.setItem('hydrotool_ai_key', apiKey)
+    localStorage.setItem('hydrotool_ai_url', baseUrl)
+    localStorage.setItem('hydrotool_ai_model', model)
+    setShowSettings(false)
+  }
+
+  const handleStart = async () => {
+    if (target === 'detect' || !apiKey.trim()) return
     setRunning(true)
-    setProgress(0)
-    const timer = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(timer)
-          setRunning(false)
-          return 100
+    setProgress(10)
+    setSteps([])
+    setSummary('')
+    setError('')
+    setSuccess(false)
+
+    // Connect WebSocket for real-time progress
+    const wsUrl = `ws://${window.location.hostname}:8000/api/ai/progress`
+    const ws = new WebSocket(wsUrl)
+    wsRef.current = ws
+
+    ws.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data)
+        if (msg.type === 'ai_step') {
+          setSteps(prev => {
+            const newSteps = [...prev, {
+              step: msg.step,
+              tool: msg.tool,
+              args: msg.args || {},
+              result: msg.result || '',
+            }]
+            return newSteps
+          })
+          setProgress(10 + Math.min(msg.step * 20, 85))
         }
-        return prev + 1
+      } catch {}
+    }
+
+    // Wait briefly for WS to connect
+    await new Promise<void>((resolve) => {
+      ws.onopen = () => resolve()
+      setTimeout(() => resolve(), 2000)
+    })
+
+    // Call API
+    try {
+      setStep(4) // Move to execution step
+      const resp = await fetch('/api/ai/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          goal: TARGETS.find(t => t.value === target)?.label + ' - ' +
+                (target === 'root' ? '为设备获取 Root 权限' :
+                 target === 'flash' ? '刷入 ROM 固件' :
+                 '恢复设备'),
+          api_key: apiKey,
+          base_url: baseUrl || undefined,
+          model: model || undefined,
+        }),
       })
-    }, 50)
-    setTimeout(() => setStep(4), 2000)
+      const data = await resp.json()
+
+      if (!resp.ok) {
+        throw new Error(data.detail || '请求失败')
+      }
+
+      setSummary(data.summary || '执行完成')
+      setSuccess(data.success)
+      setProgress(100)
+    } catch (err: any) {
+      setError(err.message || '执行出错')
+      setProgress(0)
+    } finally {
+      setRunning(false)
+      ws.close()
+      wsRef.current = null
+    }
+  }
+
+  const getToolIcon = (toolName: string) => {
+    switch (toolName) {
+      case 'check_environment': return <Monitor className="w-4 h-4" />
+      case 'get_device_info': return <Terminal className="w-4 h-4" />
+      case 'run_adb_command': return <Terminal className="w-4 h-4" />
+      case 'run_fastboot_command': return <Zap className="w-4 h-4" />
+      case 'finalize': return <CheckCircle2 className="w-4 h-4" />
+      default: return <Cpu className="w-4 h-4" />
+    }
   }
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-500">
       {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          AI 自动刷机模式
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          面向小白的一键式体验：环境检测 → 设备识别 → 目标选择 → 全自动执行
-        </p>
+      <div className="flex items-center justify-between">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+            AI 自动刷机模式
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            AI 分析目标 → 自动生成命令 → 执行 → 反馈 → 循环直到完成
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setShowSettings(!showSettings)} className="gap-1.5">
+          <Settings2 className="w-3.5 h-3.5" />
+          设置
+        </Button>
       </div>
+
+      {/* Settings panel */}
+      {showSettings && (
+        <Card className="border-brand/20 animate-in slide-in-from-top-2 duration-300">
+          <CardContent className="p-4 space-y-3">
+            <p className="text-xs text-muted-foreground">
+              配置 OpenAI 兼容 API（支持 OpenAI / DeepSeek / 硅基流动 / 本地模型等）
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">API Key *</label>
+                <Input
+                  type="password"
+                  placeholder="sk-..."
+                  value={apiKey}
+                  onChange={e => setApiKey(e.target.value)}
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Base URL（可选）</label>
+                <Input
+                  placeholder="默认 OpenAI"
+                  value={baseUrl}
+                  onChange={e => setBaseUrl(e.target.value)}
+                  className="h-9 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">模型</label>
+                <Input
+                  placeholder="gpt-4o-mini"
+                  value={model}
+                  onChange={e => setModel(e.target.value)}
+                  className="h-9 text-sm"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button size="sm" onClick={saveSettings}>保存设置</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Steps */}
       <div className="space-y-4">
-        {STEPS.map((s) => {
-          const isActive = step === s.step
-          const isDone = step > s.step
+        {([
+          { s: 1 as AiStep, title: '运行环境检测', desc: '检查 ADB、Fastboot、驱动是否就绪' },
+          { s: 2 as AiStep, title: '设备识别', desc: '自动检测设备型号与 BL 状态' },
+          { s: 3 as AiStep, title: '选择目标', desc: '选择您需要的操作' },
+          { s: 4 as AiStep, title: 'AI 自动执行', desc: 'AI 分析 → 命令生成 → 执行 → 反馈循环' },
+        ]).map((s) => {
+          const isActive = step === s.s
+          const isDone = step > s.s
 
           return (
             <Card
-              key={s.step}
+              key={s.s}
               className={`transition-all duration-300 ${
                 isActive
                   ? 'border-brand/40 bg-brand/5 shadow-lg shadow-brand/5'
@@ -89,7 +238,6 @@ export function AiAutoPage({ devices }: AiAutoPageProps) {
             >
               <CardContent className="p-5">
                 <div className="flex items-start gap-4">
-                  {/* Step indicator */}
                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold transition-all duration-300 ${
                     isDone
                       ? 'bg-emerald-500 text-white'
@@ -97,7 +245,7 @@ export function AiAutoPage({ devices }: AiAutoPageProps) {
                         ? 'bg-brand text-white shadow-md shadow-brand/30'
                         : 'bg-muted text-muted-foreground'
                   }`}>
-                    {isDone ? <CheckCircle2 className="w-4 h-4" /> : s.step}
+                    {isDone ? <CheckCircle2 className="w-4 h-4" /> : s.s}
                   </div>
 
                   <div className="flex-1 min-w-0 pt-0.5">
@@ -114,8 +262,8 @@ export function AiAutoPage({ devices }: AiAutoPageProps) {
                     </div>
                     <p className="text-xs text-muted-foreground">{s.desc}</p>
 
-                    {/* Step 1 content — env check */}
-                    {isActive && s.step === 1 && (
+                    {/* Step 1: Env check */}
+                    {isActive && s.s === 1 && (
                       <div className="mt-3 grid grid-cols-2 gap-2">
                         {[
                           { label: '操作系统', value: 'Windows / Linux / macOS', ok: true },
@@ -135,8 +283,8 @@ export function AiAutoPage({ devices }: AiAutoPageProps) {
                       </div>
                     )}
 
-                    {/* Step 2 content — device detect */}
-                    {isActive && s.step === 2 && (
+                    {/* Step 2: Device detect */}
+                    {isActive && s.s === 2 && (
                       <div className="mt-3">
                         {devices.length > 0 ? (
                           <div className="flex items-center gap-2 text-sm text-emerald-400">
@@ -152,8 +300,8 @@ export function AiAutoPage({ devices }: AiAutoPageProps) {
                       </div>
                     )}
 
-                    {/* Step 3 content — target selection */}
-                    {isActive && s.step === 3 && (
+                    {/* Step 3: Target */}
+                    {isActive && s.s === 3 && (
                       <div className="mt-3 grid gap-2 sm:grid-cols-2">
                         {TARGETS.map(opt => {
                           const selected = target === opt.value
@@ -184,40 +332,103 @@ export function AiAutoPage({ devices }: AiAutoPageProps) {
                       </div>
                     )}
 
-                    {/* Step 4 content — execution */}
-                    {isActive && s.step === 4 && (
+                    {/* Step 4: AI Execution */}
+                    {isActive && s.s === 4 && (
                       <div className="mt-3 space-y-3">
+                        {/* Real-time steps from AI */}
+                        {steps.length > 0 && (
+                          <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                            {steps.map((st, i) => (
+                              <div key={i} className="flex items-start gap-2 text-xs">
+                                <span className="mt-0.5 flex-shrink-0">{getToolIcon(st.tool)}</span>
+                                <div className="min-w-0 flex-1">
+                                  <span className="font-mono text-muted-foreground">{st.tool}</span>
+                                  <span className="text-muted-foreground/60 ml-2 truncate">
+                                    {st.result?.slice(0, 80)}
+                                  </span>
+                                </div>
+                                <CheckCircle2 className="w-3 h-3 text-emerald-400 flex-shrink-0 mt-0.5" />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Progress bar */}
                         {running && (
                           <div className="space-y-2">
                             <Progress value={progress} className="h-1.5" />
                             <div className="flex items-center justify-between text-xs">
-                              <span className="text-muted-foreground">正在执行...</span>
+                              <span className="text-brand flex items-center gap-1.5">
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                                AI 正在分析并执行...
+                              </span>
                               <span className="text-muted-foreground tabular-nums">{progress}%</span>
                             </div>
                           </div>
                         )}
-                        <Button
-                          onClick={handleStart}
-                          disabled={running || target === 'detect'}
-                          className="gap-2"
-                        >
-                          {running ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              执行中...
-                            </>
-                          ) : target === 'detect' ? (
-                            <>
-                              <ArrowRight className="w-4 h-4" />
-                              请先选择目标
-                            </>
-                          ) : (
-                            <>
-                              <Play className="w-4 h-4" />
-                              开始自动执行
-                            </>
-                          )}
-                        </Button>
+
+                        {/* Summary */}
+                        {summary && !running && (
+                          <div className={`p-4 rounded-lg ${
+                            success ? 'bg-emerald-500/10 border border-emerald-500/20' :
+                            'bg-red-500/10 border border-red-500/20'
+                          }`}>
+                            <div className="flex items-start gap-2">
+                              {success
+                                ? <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                                : <XCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+                              }
+                              <div className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                {summary}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Error */}
+                        {error && !running && (
+                          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-sm text-red-400">
+                            {error}
+                          </div>
+                        )}
+
+                        {/* Action button */}
+                        {!running && !summary && (
+                          <Button
+                            onClick={handleStart}
+                            disabled={target === 'detect' || !apiKey.trim()}
+                            className="gap-2"
+                          >
+                            {target === 'detect' ? (
+                              <>
+                                <ArrowRight className="w-4 h-4" />
+                                请先选择目标
+                              </>
+                            ) : !apiKey.trim() ? (
+                              <>
+                                <Settings2 className="w-4 h-4" />
+                                请先配置 API Key
+                              </>
+                            ) : (
+                              <>
+                                <Play className="w-4 h-4" />
+                                开始 AI 自动执行
+                              </>
+                            )}
+                          </Button>
+                        )}
+
+                        {/* Retry */}
+                        {!running && (summary || error) && (
+                          <Button
+                            variant="outline"
+                            onClick={handleStart}
+                            className="gap-2"
+                          >
+                            <Play className="w-4 h-4" />
+                            重新执行
+                          </Button>
+                        )}
                       </div>
                     )}
                   </div>

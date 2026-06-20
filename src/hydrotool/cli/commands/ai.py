@@ -1,11 +1,9 @@
 """
-AI 自动模式 CLI 命令（Phase 3 实现）
+AI 自动模式 CLI 命令
 
 hydrotool ai auto           — AI 一键自动刷机/Root
 hydrotool ai check-env      — 检测运行环境
 hydrotool ai scan-device    — 扫描设备状态
-
-当前为功能占位，Phase 3 实现完整逻辑。
 """
 
 import asyncio
@@ -19,6 +17,7 @@ from rich.table import Table
 from hydrotool.cli.main import ai
 from hydrotool.core.adb.client import AdbClient
 from hydrotool.core.fastboot.client import FastbootClient
+from hydrotool.core.ai.executor import AiExecutor
 
 console = Console()
 adb = AdbClient()
@@ -37,13 +36,24 @@ def run_async(coro):
     default="detect",
     help="操作目标: root=一键Root, flash=刷机, detect=仅检测"
 )
-def auto(serial: Optional[str], target: str):
-    """AI 一键自动刷机/Root（自动检测环境→识别设备→执行）"""
+@click.option("--goal", default=None, help="自定义目标描述（覆盖 --target）")
+def auto(serial: Optional[str], target: str, goal: Optional[str]):
+    """AI 一键自动刷机/Root（LLM 驱动 → 命令生成 → 执行反馈闭环）"""
     console.print(Panel.fit(
         "[bold]🤖 HydroTool AI 自动模式[/bold]\n"
-        "自动检测运行环境 → 识别设备状态 → 执行目标操作",
+        "AI 分析目标 → 生成命令 → 执行 → 反馈 → 循环直到完成",
         border_style="cyan"
     ))
+
+    # Build goal
+    if goal:
+        final_goal = goal
+    elif target == "root":
+        final_goal = "为设备获取 Root 权限（Magisk/KernelSU/APatch）"
+    elif target == "flash":
+        final_goal = "刷入 ROM 固件到设备"
+    else:
+        final_goal = "检测设备和环境状态"
 
     # Step 1: 环境检测
     console.print("\n[bold]步骤 1/4: 检测运行环境[/bold]")
@@ -68,16 +78,28 @@ def auto(serial: Optional[str], target: str):
         console.print("[red]❌ 未检测到设备，请连接手机后重试[/red]")
         return
 
-    # Step 3: 方案预览（仅 detect 模式）
+    # Step 3-4: AI 执行
     if target == "detect":
-        console.print("\n[bold]✅ 检测完成！设备已就绪[/bold]")
-        console.print("[dim]使用 --target root 或 --target flash 执行具体操作[/dim]")
+        console.print("\n[bold green]✅ 检测完成！设备已就绪[/bold green]")
         return
 
-    # Step 4: 执行（Phase 3 实现）
-    console.print(f"\n[bold]步骤 3-4: 执行 {target} 操作[/bold]")
-    console.print("[yellow]⏳ AI 自动执行功能将在 Phase 3 版本中实现[/yellow]")
-    console.print("[yellow]当前请使用: hydrotool root auto 手动完成 Root[/yellow]")
+    console.print(f"\n[bold]步骤 3-4: AI 自动执行 [{target}][/bold]")
+    console.print(f"[dim]目标: {final_goal}[/dim]\n")
+
+    executor = AiExecutor()
+    state = run_async(executor.execute(final_goal, {"serial": serial} if serial else None))
+
+    # 显示步骤
+    for s in state.steps:
+        console.print(f"  🔧 {s.tool_name}: {s.result[:120]}")
+
+    if state.success:
+        console.print(f"\n[bold green]✅ {state.summary}[/bold green]")
+    else:
+        console.print(f"\n[yellow]⚠️ {state.summary}[/yellow]")
+
+    if state.error:
+        console.print(f"[red]错误: {state.error}[/red]")
 
 
 @ai.command("check-env")

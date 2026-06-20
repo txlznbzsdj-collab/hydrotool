@@ -42,6 +42,8 @@ a = Analysis(
         'hydrotool.backend.routers.root',
         'hydrotool.backend.websocket',
         'hydrotool.backend.websocket.device_stream',
+        'hydrotool.core.ai',
+        'hydrotool.core.ai.executor',
         'click',
         'rich',
         'pydantic',
