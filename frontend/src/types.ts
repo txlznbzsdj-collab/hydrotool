@@ -3,8 +3,13 @@ export interface Device {
   model?: string
   brand?: string
   android_version?: string
+  sdk?: number
   type: 'adb' | 'fastboot'
   status?: string
+  bootloader_unlocked?: boolean
+  root_method?: string
+  current_slot?: string
+  mode?: string
 }
 
 export interface FastbootDevice {

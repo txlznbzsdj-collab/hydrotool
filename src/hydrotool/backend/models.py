@@ -35,6 +35,14 @@ class DeviceListItem(BaseModel):
     serial: str
     type: str  # "adb" or "fastboot"
     status: str
+    model: str = ""
+    brand: str = ""
+    android_version: str = ""
+    sdk: int = 0
+    bootloader_unlocked: Optional[bool] = None
+    root_method: str = ""
+    current_slot: str = ""
+    mode: str = ""
 
 
 class DeviceListResponse(BaseModel):

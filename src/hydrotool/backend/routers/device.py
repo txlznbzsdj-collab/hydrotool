@@ -23,22 +23,55 @@ fb = FastbootClient()
 
 @router.get("", response_model=DeviceListResponse)
 async def list_devices():
-    """列出所有已连接的设备"""
+    """列出所有已连接的设备（含简要信息）"""
+    import asyncio
     devices = []
 
     try:
         adb_devices = await adb.devices()
-        for d in adb_devices:
-            devices.append(DeviceListItem(serial=d["serial"], type="adb", status=d["status"]))
+        # 并发获取每个 ADB 设备的详细信息
+        async def _get_adb_info(d: dict) -> DeviceListItem:
+            try:
+                info = await adb.get_device_info(d["serial"])
+                return DeviceListItem(
+                    serial=d["serial"], type="adb", status=d["status"],
+                    model=info.model or "", brand=info.brand or "",
+                    android_version=info.android_version or "",
+                    sdk=info.sdk or 0,
+                    bootloader_unlocked=info.bootloader_unlocked,
+                    root_method=info.root_method or "",
+                    current_slot=info.current_slot or "",
+                )
+            except Exception:
+                return DeviceListItem(serial=d["serial"], type="adb", status=d["status"])
+
+        tasks = [_get_adb_info(d) for d in adb_devices]
+        if tasks:
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for r in results:
+                if isinstance(r, DeviceListItem):
+                    devices.append(r)
+                elif isinstance(r, Exception):
+                    pass  # skip failed devices
     except (FileNotFoundError, Exception):
-        pass  # adb not installed
+        pass
 
     try:
         fb_devices = await fb.devices()
         for d in fb_devices:
-            devices.append(DeviceListItem(serial=d["serial"], type="fastboot", status=d["status"]))
+            try:
+                info = await fb.get_all_vars(d["serial"])
+                devices.append(DeviceListItem(
+                    serial=d["serial"], type="fastboot", status=d["status"],
+                    model=info.get("product", ""),
+                    brand=info.get("vendor", ""),
+                    bootloader_unlocked=info.get("unlocked", "").lower() == "yes",
+                    current_slot=info.get("current-slot", ""),
+                ))
+            except Exception:
+                devices.append(DeviceListItem(serial=d["serial"], type="fastboot", status=d["status"]))
     except (FileNotFoundError, Exception):
-        pass  # fastboot not installed
+        pass
 
     return DeviceListResponse(devices=devices)
 
