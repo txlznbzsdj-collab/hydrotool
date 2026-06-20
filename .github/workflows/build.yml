@@ -3,9 +3,8 @@
 # 推 v* 标签自动触发:
 # - 构建 Web UI (React + Vite)
 # - PyInstaller 打包 Python + 前端 (单文件 exe)
-# - Windows: Inno Setup GUI 安装向导
+# - Windows: 同时传 exe 和 Inno Setup 安装包
 # - Linux/macOS: 压缩包
-# - 上传到 GitHub Release
 
 name: 跨平台打包
 
@@ -27,34 +26,25 @@ jobs:
         with: { python-version: "3.11" }
 
       - name: 构建 Web UI
-        run: |
-          cd frontend
-          npm install
-          npm run build
+        run: cd frontend && npm install && npm run build
 
       - name: 安装 Python 依赖
-        run: |
-          pip install -e ".[web]"
-          pip install pyinstaller
+        run: pip install -e ".[web]" && pip install pyinstaller
 
       - name: PyInstaller 打包 (含前端)
         run: pyinstaller packaging/hydrotool-windows.spec
 
-      - name: Inno Setup GUI 安装程序
+      - name: Inno Setup GUI 安装程序 (可选)
         run: |
-          choco install innosetup -y --no-progress --limit-output 2>$null
-          $iscc = Get-ChildItem -Path "C:\Program Files*\Inno Setup*\ISCC.exe" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $iscc) { $iscc = (Get-Command iscc -ErrorAction SilentlyContinue).Source }
-          if ($iscc) {
-            & $iscc packaging\hydrotool-setup.iss
-          } else {
-            Write-Warning "Inno Setup not found, skipping GUI installer"
-          }
+          choco install innosetup --force -y --no-progress --limit-output 2>$null
+          iscc packaging\hydrotool-setup.iss 2>$null
+        continue-on-error: true
 
       - name: 上传到 Release
         uses: softprops/action-gh-release@v2
         with:
           files: |
+            dist/hydrotool.exe
             dist/Output/hydrotool-setup-*.exe
 
   build-linux:
@@ -69,15 +59,10 @@ jobs:
         with: { python-version: "3.11" }
 
       - name: 构建 Web UI
-        run: |
-          cd frontend
-          npm install
-          npm run build
+        run: cd frontend && npm install && npm run build
 
       - name: 安装 Python 依赖
-        run: |
-          pip install -e ".[web]"
-          pip install pyinstaller
+        run: pip install -e ".[web]" && pip install pyinstaller
 
       - name: PyInstaller 打包
         run: pyinstaller packaging/hydrotool-linux.spec
@@ -102,15 +87,10 @@ jobs:
         with: { python-version: "3.11" }
 
       - name: 构建 Web UI
-        run: |
-          cd frontend
-          npm install
-          npm run build
+        run: cd frontend && npm install && npm run build
 
       - name: 安装 Python 依赖
-        run: |
-          pip install -e ".[web]"
-          pip install pyinstaller
+        run: pip install -e ".[web]" && pip install pyinstaller
 
       - name: PyInstaller 打包
         run: pyinstaller packaging/hydrotool-macos.spec
