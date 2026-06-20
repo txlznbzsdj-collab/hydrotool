@@ -11,6 +11,7 @@ export interface Device {
   mode?: string
   build_fingerprint?: string
   security_patch?: string
+  kernel_version?: string
   battery_level?: number
   storage_total?: number
   storage_used?: number

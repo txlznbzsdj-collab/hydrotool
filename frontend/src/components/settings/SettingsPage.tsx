@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
-import { Settings2, Key, Globe, Cpu, Info } from 'lucide-react'
+import { Key, Globe, Cpu, Info } from 'lucide-react'
 
 export function SettingsPage() {
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('hydrotool_ai_key') || '')

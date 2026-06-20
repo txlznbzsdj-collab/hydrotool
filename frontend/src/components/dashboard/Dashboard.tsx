@@ -7,8 +7,7 @@ import {
   Smartphone, Usb, Cpu, Monitor,
   BatteryFull, BatteryMedium, BatteryLow,
   HardDrive, MemoryStickIcon as Memory,
-  Unlock, Lock, Layers, ChevronDown, ChevronRight,
-  Fingerprint,
+  Unlock, Lock, ChevronDown, ChevronRight,
 } from 'lucide-react'
 import type { Device } from '@/types'
 
@@ -95,7 +94,7 @@ function Stat({ label, value, icon: Icon, variant }: { label: string; value: num
 function DeviceCard({ device, expanded, onClick }: { device: Device; expanded: boolean; onClick: () => void }) {
   const hasInfo = !!(device.brand && device.model)
   const storagePct = device.storage_total ? Math.round((device.storage_used || 0) / device.storage_total * 100) : 0
-  const batteryIcon = (device.battery_level ?? -1) >= 80 ? BatteryFull : (device.battery_level ?? -1) >= 30 ? BatteryMedium : BatteryLow
+  const BatteryIcon = (device.battery_level ?? -1) >= 80 ? BatteryFull : (device.battery_level ?? -1) >= 30 ? BatteryMedium : BatteryLow
 
   return (
     <Card className="group cursor-pointer hover:border-brand/30 transition-all duration-200 hover:shadow-md hover:shadow-brand/5" onClick={onClick}>
@@ -120,7 +119,7 @@ function DeviceCard({ device, expanded, onClick }: { device: Device; expanded: b
               {device.current_slot && <span className="font-mono uppercase">{device.current_slot}</span>}
               {device.battery_level !== undefined && device.battery_level >= 0 && (
                 <span className="flex items-center gap-0.5">
-                  <batteryIcon className="w-2.5 h-2.5" /> {device.battery_level}%
+                  <BatteryIcon className="w-2.5 h-2.5" /> {device.battery_level}%
                 </span>
               )}
             </div>
