@@ -27,7 +27,7 @@ export interface FastbootDevice {
   current_slot?: string
 }
 
-export type Page = 'dashboard' | 'ai-auto' | 'flash' | 'root' | 'modules' | 'tools' | 'settings'
+export type Page = 'dashboard' | 'ai-auto' | 'flash' | 'root' | 'modules' | 'hide' | 'tools' | 'settings'
 
 export type AiTarget = 'detect' | 'root' | 'flash' | 'unbrick'
 

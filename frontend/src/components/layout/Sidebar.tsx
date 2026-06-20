@@ -10,6 +10,7 @@ import {
   Terminal,
   Wrench,
   Settings2,
+  Eye,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -31,6 +32,7 @@ const NAV_ITEMS: { id: Page; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'flash', label: '刷机', icon: Zap },
   { id: 'root', label: 'Root', icon: Shield },
   { id: 'modules', label: '模块', icon: Box },
+  { id: 'hide', label: '隐藏', icon: Eye },
   { id: 'tools', label: '工具箱', icon: Wrench },
   { id: 'settings', label: '设置', icon: Settings2 },
 ]

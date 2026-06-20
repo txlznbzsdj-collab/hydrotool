@@ -8,6 +8,7 @@ import { RootPage } from '@/components/root-manager/RootPage'
 import { ModulePage } from '@/components/modules/ModulePage'
 import { ToolsPage } from '@/components/tools/ToolsPage'
 import { SettingsPage } from '@/components/settings/SettingsPage'
+import { HidePage } from '@/components/hide/HidePage'
 import type { Page, Device } from '@/types'
 
 function App() {
@@ -68,6 +69,8 @@ function App() {
         return <ToolsPage />
       case 'settings':
         return <SettingsPage />
+      case 'hide':
+        return <HidePage />
     }
   }
 
