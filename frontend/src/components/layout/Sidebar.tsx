@@ -71,7 +71,7 @@ export function Sidebar({ page, onNavigate, devices, connected, collapsed, onTog
           {NAV_ITEMS.map((item) => {
             const active = page === item.id
             return collapsed ? (
-              <Tooltip key={item.id} delay={200}>
+              <Tooltip key={item.id}>
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => onNavigate(item.id)}
@@ -110,7 +110,7 @@ export function Sidebar({ page, onNavigate, devices, connected, collapsed, onTog
       <div className={`border-t border-sidebar-border ${collapsed ? 'p-2' : 'px-4 py-3'}`}>
         <Separator className="mb-3 bg-sidebar-border" />
         {collapsed ? (
-          <Tooltip delay={200}>
+          <Tooltip>
             <TooltipTrigger asChild>
               <div className="flex items-center justify-center">
                 <div
