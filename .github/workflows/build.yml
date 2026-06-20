@@ -42,7 +42,7 @@ jobs:
 
       - name: Inno Setup GUI 安装程序
         run: |
-          choco install innosetup --version=6.4.1 -y
+          choco install innosetup -y --no-progress --limit-output
           iscc packaging/hydrotool-setup.iss
 
       - name: 上传到 Release

@@ -26,7 +26,6 @@ WizardStyle=modern
 PrivilegesRequired=admin
 
 [Languages]
-Name: "chinese"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
