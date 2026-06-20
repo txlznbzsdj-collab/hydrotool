@@ -70,19 +70,23 @@ export function Sidebar({ page, onNavigate, devices, connected, collapsed, onTog
         <nav className={`flex flex-col gap-0.5 p-2 ${collapsed ? 'px-2' : 'px-3'}`}>
           {NAV_ITEMS.map((item) => {
             const active = page === item.id
+            const btnClass = `flex items-center gap-3 px-3 h-10 rounded-lg text-sm font-medium transition-all duration-200 ${
+              active
+                ? 'bg-sidebar-accent text-sidebar-primary shadow-sm'
+                : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'
+            }`
             return collapsed ? (
               <Tooltip key={item.id}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => onNavigate(item.id)}
-                    className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 ${
-                      active
-                        ? 'bg-sidebar-accent text-sidebar-primary shadow-sm'
-                        : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'
-                    }`}
-                  >
-                    <item.icon className="w-5 h-5" />
-                  </button>
+                <TooltipTrigger
+                  onClick={() => onNavigate(item.id)}
+                  className={`flex items-center justify-center w-10 h-10 rounded-lg transition-all duration-200 ${
+                    active
+                      ? 'bg-sidebar-accent text-sidebar-primary shadow-sm'
+                      : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'
+                  }`}
+                  aria-label={item.label}
+                >
+                  <item.icon className="w-5 h-5" />
                 </TooltipTrigger>
                 <TooltipContent side="right" className="text-xs">
                   {item.label}
@@ -92,11 +96,7 @@ export function Sidebar({ page, onNavigate, devices, connected, collapsed, onTog
               <button
                 key={item.id}
                 onClick={() => onNavigate(item.id)}
-                className={`flex items-center gap-3 px-3 h-10 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  active
-                    ? 'bg-sidebar-accent text-sidebar-primary shadow-sm'
-                    : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'
-                }`}
+                className={btnClass}
               >
                 <item.icon className="w-4.5 h-4.5 flex-shrink-0" />
                 <span className="truncate">{item.label}</span>
@@ -111,17 +111,15 @@ export function Sidebar({ page, onNavigate, devices, connected, collapsed, onTog
         <Separator className="mb-3 bg-sidebar-border" />
         {collapsed ? (
           <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center justify-center">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                    connected ? 'bg-emerald-500/10' : 'bg-red-500/10'
-                  }`}
-                >
-                  <Smartphone
-                    className={`w-4 h-4 ${connected ? 'text-emerald-400' : 'text-red-400'}`}
-                  />
-                </div>
+            <TooltipTrigger className="flex items-center justify-center w-full" aria-label="设备状态">
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  connected ? 'bg-emerald-500/10' : 'bg-red-500/10'
+                }`}
+              >
+                <Smartphone
+                  className={`w-4 h-4 ${connected ? 'text-emerald-400' : 'text-red-400'}`}
+                />
               </div>
             </TooltipTrigger>
             <TooltipContent side="right" className="text-xs">
