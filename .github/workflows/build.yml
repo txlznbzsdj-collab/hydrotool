@@ -1,10 +1,11 @@
-# HydroTool 跨平台打包 — GUI 安装程序
+# HydroTool 跨平台打包 — Windows GUI 安装程序
 #
 # 推 v* 标签自动触发:
 # - 构建 Web UI (React + Vite)
 # - PyInstaller 打包 Python + 前端 (单文件 exe)
-# - Windows: 同时传 exe 和 Inno Setup 安装包
-# - Linux/macOS: 压缩包
+# - Windows: exe + Inno Setup 安装包（可选）
+# - Linux: 压缩包
+# - 上传到 GitHub Release
 
 name: 跨平台打包
 
@@ -74,31 +75,3 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: dist/hydrotool-linux-x86_64.tar.gz
-
-  build-macos:
-    runs-on: macos-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: "22" }
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.11" }
-
-      - name: 构建 Web UI
-        run: cd frontend && npm install && npm run build
-
-      - name: 安装 Python 依赖
-        run: pip install -e ".[web]" && pip install pyinstaller
-
-      - name: PyInstaller 打包
-        run: pyinstaller packaging/hydrotool-macos.spec
-
-      - name: 压缩
-        run: cd dist && zip -r hydrotool-macos.zip hydrotool.app
-
-      - name: 上传到 Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: dist/hydrotool-macos.zip
