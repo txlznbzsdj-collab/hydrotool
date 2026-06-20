@@ -31,7 +31,6 @@ export function Dashboard({ devices }: DashboardProps) {
 
   const adbCount = devices.filter(d => d.type === 'adb').length
   const fastbootCount = devices.filter(d => d.type === 'fastboot').length
-  const unlockedCount = devices.filter(d => d.bootloader_unlocked).length
   const rootedCount = devices.filter(d => d.root_method).length
 
   return (

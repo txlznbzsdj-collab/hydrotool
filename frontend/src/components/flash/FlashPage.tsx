@@ -5,8 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import {
-  Zap, Cpu, HardDrive, Trash2, RotateCw, Unlock, Lock, Sparkles, AlertTriangle, Info,
-  ArrowRight,
+  Zap, Cpu, HardDrive, Trash2, RotateCw, Unlock, Lock, Sparkles, AlertTriangle,
 } from 'lucide-react'
 import { DeviceSelector } from '@/components/flash/DeviceSelector'
 import { FileSelector } from '@/components/flash/FileSelector'

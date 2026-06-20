@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { ArrowLeftRight, Check, Loader2 } from 'lucide-react'
+import { ArrowLeftRight, Loader2 } from 'lucide-react'
 import type { SlotInfo } from '@/types'
 
 interface SlotManagerProps {
