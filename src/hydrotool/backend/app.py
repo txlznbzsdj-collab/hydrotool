@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
-from hydrotool.backend.routers import device, flash, root, system, ai
+from hydrotool.backend.routers import device, flash, root, system, ai, rom
 from hydrotool.backend.websocket.device_stream import router as ws_router
 from hydrotool.backend.websocket.flash_stream import router as flash_ws_router
 
@@ -64,6 +64,7 @@ app.include_router(device.router, prefix="/api/devices", tags=["设备"])
 app.include_router(flash.router, prefix="/api/flash", tags=["刷机"])
 app.include_router(root.router, prefix="/api/root", tags=["Root"])
 app.include_router(ai.router, prefix="/api/ai", tags=["AI 自动"])
+app.include_router(rom.router, prefix="/api/rom", tags=["ROM 工具箱"])
 app.include_router(ws_router, prefix="/ws", tags=["WebSocket"])
 app.include_router(flash_ws_router, prefix="/ws", tags=["刷机WebSocket"])
 

@@ -41,6 +41,7 @@ a = Analysis(
         'hydrotool.backend.routers.flash',
         'hydrotool.backend.routers.root',
         'hydrotool.backend.routers.ai',
+        'hydrotool.backend.routers.rom',
         'hydrotool.backend.websocket',
         'hydrotool.backend.websocket.device_stream',
         'hydrotool.backend.websocket.flash_stream',
