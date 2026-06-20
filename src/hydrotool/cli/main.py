@@ -4,15 +4,48 @@ HydroTool CLI 入口
 提供 hydrotool 命令行工具的主入口和命令组结构。
 """
 
+import sys
 import click
 
 
-@click.group()
+@click.group(invoke_without_command=True)
 @click.version_option(version="0.1.0", prog_name="hydrotool")
 @click.option("--debug", is_flag=True, help="启用调试模式")
-def cli(debug: bool):
-    """HydroTool — 安卓刷机调试一体化工具箱"""
-    pass
+@click.pass_context
+def cli(ctx, debug: bool):
+    """HydroTool — 安卓刷机调试一体化工具箱
+
+    无参数运行时自动启动图形界面（Web UI）。
+    """
+    if ctx.invoked_subcommand is None:
+        # 无子命令 → 启动图形界面
+        _launch_gui()
+
+
+def _launch_gui():
+    """启动图形界面（Web UI）"""
+    import webbrowser
+    import threading
+    import uvicorn
+
+    port = 8000
+    url = f"http://localhost:{port}"
+
+    def _open_browser():
+        import time
+        time.sleep(1.5)
+        webbrowser.open(url)
+
+    threading.Thread(target=_open_browser, daemon=True).start()
+    click.echo(f"🚀 HydroTool 图形界面启动中...")
+    click.echo(f"   浏览器访问: {url}")
+    click.echo(f"   按 Ctrl+C 退出")
+    uvicorn.run(
+        "hydrotool.backend.app:app",
+        host="0.0.0.0",
+        port=port,
+        log_level="warning",
+    )
 
 
 # ============================================================
