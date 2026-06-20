@@ -42,6 +42,7 @@ a = Analysis(
         'click',
         'rich',
         'pydantic',
+        'webview',
     ],
     hookspath=[],
     hooksconfig={},

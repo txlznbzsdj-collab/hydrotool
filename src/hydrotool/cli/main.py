@@ -23,29 +23,38 @@ def cli(ctx, debug: bool):
 
 
 def _launch_gui():
-    """启动图形界面（Web UI）"""
-    import webbrowser
+    """启动原生桌面窗口（无需浏览器）"""
     import threading
     import uvicorn
+    import webview
 
     port = 8000
     url = f"http://localhost:{port}"
 
-    def _open_browser():
-        import time
-        time.sleep(1.5)
-        webbrowser.open(url)
+    # 后台启动 FastAPI
+    def _run_server():
+        uvicorn.run(
+            "hydrotool.backend.app:app",
+            host="127.0.0.1",
+            port=port,
+            log_level="warning",
+        )
 
-    threading.Thread(target=_open_browser, daemon=True).start()
-    click.echo(f"🚀 HydroTool 图形界面启动中...")
-    click.echo(f"   浏览器访问: {url}")
-    click.echo(f"   按 Ctrl+C 退出")
-    uvicorn.run(
-        "hydrotool.backend.app:app",
-        host="0.0.0.0",
-        port=port,
-        log_level="warning",
+    server_thread = threading.Thread(target=_run_server, daemon=True)
+    server_thread.start()
+
+    click.echo(f"🚀 HydroTool 启动中...")
+
+    # 原生桌面窗口
+    webview.create_window(
+        title="HydroTool — 鸿德工具箱",
+        url=url,
+        width=1100,
+        height=750,
+        min_size=(800, 550),
+        text_select=True,
     )
+    webview.start(debug=False)
 
 
 # ============================================================
@@ -92,7 +101,8 @@ def ai():
 @cli.command()
 @click.option("-p", "--port", default=8000, help="服务端口 (默认: 8000)")
 @click.option("--no-browser", is_flag=True, help="不自动打开浏览器")
-def serve(port: int, no_browser: bool):
+@click.option("--native", is_flag=True, help="使用原生桌面窗口（无需浏览器）")
+def serve(port: int, no_browser: bool, native: bool):
     """启动图形界面（Web UI）
     
     启动后端 API 服务，并在浏览器中打开图形界面。
@@ -103,6 +113,22 @@ def serve(port: int, no_browser: bool):
     import threading
 
     url = f"http://localhost:{port}"
+
+    if native:
+        import webview
+
+        def _run():
+            uvicorn.run("hydrotool.backend.app:app", host="127.0.0.1", port=port, log_level="warning")
+
+        threading.Thread(target=_run, daemon=True).start()
+        click.echo(f"🚀 HydroTool 原生窗口启动中...")
+        webview.create_window(
+            title="HydroTool — 鸿德工具箱",
+            url=url, width=1100, height=750,
+            min_size=(800, 550), text_select=True,
+        )
+        webview.start(debug=False)
+        return
 
     if not no_browser:
         def _open():
