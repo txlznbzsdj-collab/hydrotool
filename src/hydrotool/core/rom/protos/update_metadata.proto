@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package update_engine;
+
+// Google update_engine payload.bin manifest definition
+// Reference: AOSP system/update_engine/payload_consumer/payload_constants.h
+
+message Extent {
+  uint64 start_block = 1;
+  uint64 num_blocks = 2;
+}
+
+message Signatures {
+  message Signature {
+    uint32 version = 1;
+    bytes data = 2;
+    bytes unpadded_signature_size = 3;
+  }
+  repeated Signature signatures = 1;
+}
+
+message PartitionInfo {
+  uint64 size = 1;
+  bytes hash = 2;
+}
+
+message InstallOperation {
+  enum Type {
+    REPLACE = 0;
+    REPLACE_BZ = 1;
+    SOURCE_COPY = 2;
+    SOURCE_BSDIFF = 3;
+    ZERO = 4;
+    DISCARD = 5;
+    REPLACE_XZ = 6;
+    PUFFDIFF = 7;
+    BROTLI_BSDIFF = 8;
+    ZUCCHINI = 9;
+    LZ4DIFF_BSDIFF = 10;
+    LZ4DIFF_PUFFDIFF = 11;
+  }
+  Type type = 1;
+  uint64 data_offset = 2;
+  uint64 data_length = 3;
+  repeated Extent src_extents = 4;
+  uint64 src_length = 5;
+  repeated Extent dst_extents = 6;
+  uint64 dst_length = 7;
+  bytes src_sha256_hash = 8;
+}
+
+message PartitionUpdate {
+  string partition_name = 1;
+  repeated InstallOperation operations = 2;
+  uint64 new_partition_info = 3;
+  Extent hash_tree_extent = 4;
+  bytes hash_tree_data = 5;
+  bytes hash_tree_sig = 6;
+  bytes fec_data = 7;
+  uint64 fec_roots = 8;
+  string fec_algorithm = 9;
+}
+
+message DeltaArchiveManifest {
+  uint64 metadata_size = 1;
+  uint64 metadata_signature_size = 2;
+  uint64 major_version = 3;
+  uint32 minor_version = 4;
+  uint64 old_partition_info = 5;
+  uint64 new_partition_info = 6;
+  uint32 block_size = 9;
+  uint64 max_timestamp = 10;
+  string dynamic_partition_metadata = 11;
+  repeated PartitionUpdate partitions = 13;
+  Signatures signatures = 17;
+  uint32 partial_update = 18;
+  repeated Extent apex_info = 19;
+}

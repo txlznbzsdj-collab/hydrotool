@@ -54,15 +54,93 @@ class DeviceModeResponse(BaseModel):
 # ============================================================
 
 class FlashRequest(BaseModel):
-    """刷写请求"""
+    """刷写请求（旧版兼容）"""
     serial: Optional[str] = None
     partition: str
     image_path: str
     slot: Optional[str] = None
 
+class FlashPartitionRequest(BaseModel):
+    """刷写分区请求"""
+    serial: str
+    partition: str
+    image_path: str
+    slot: Optional[str] = None
+
+class FlashBootRequest(BaseModel):
+    """刷入 boot.img 请求"""
+    serial: str
+    image_path: str
+
+class FlashAllRequest(BaseModel):
+    """整包刷写请求"""
+    serial: str
+    image_path: str
+    slot: Optional[str] = None
+
+class FlashEraseRequest(BaseModel):
+    """擦除分区请求"""
+    serial: str
+    partition: str
+
+class FlashRebootRequest(BaseModel):
+    """模式切换请求"""
+    serial: str
+    target: str = "system"  # "bootloader"|"fastbootd"|"system"
+
+class FlashUnlockRequest(BaseModel):
+    """OEM 解锁请求"""
+    serial: str
+
+class SlotSwitchRequest(BaseModel):
+    """槽位切换请求"""
+    serial: str
+    slot: str  # "a" or "b"
+
+class FlashTaskAcceptedResponse(BaseModel):
+    """刷机任务受理响应"""
+    task_id: str
+    status: str = "accepted"
+    message: str = ""
+
+class FlashLogEntry(BaseModel):
+    """刷机日志条目"""
+    timestamp: str
+    level: str  # "info"|"success"|"error"|"warn"
+    message: str
+
+class FlashTaskDetailResponse(BaseModel):
+    """刷机任务详情"""
+    task_id: str
+    type: str = "flash"
+    status: str  # "pending"|"running"|"completed"|"failed"|"cancelled"
+    progress: float = 0.0
+    current_step: str = ""
+    message: str = ""
+    timestamp: str = ""
+    logs: list[FlashLogEntry] = []
+
+class SlotInfoResponse(BaseModel):
+    """槽位信息"""
+    serial: str
+    current_slot: str
+    slots: list[str]
+    ab_support: bool
+
+class FastbootDeviceInfo(BaseModel):
+    """Fastboot 设备信息"""
+    serial: str
+    status: str
+    mode: str = ""
+    unlocked: Optional[bool] = None
+    current_slot: str = ""
+
+class FastbootDeviceListResponse(BaseModel):
+    """Fastboot 设备列表"""
+    devices: list[FastbootDeviceInfo]
 
 class FlashTaskResponse(BaseModel):
-    """刷写任务响应"""
+    """刷写任务响应（旧版兼容）"""
     task_id: str
     status: str  # "running", "completed", "failed"
     message: str = ""

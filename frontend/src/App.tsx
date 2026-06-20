@@ -57,7 +57,7 @@ function App() {
       case 'ai-auto':
         return <AiAutoPage devices={devices} />
       case 'flash':
-        return <FlashPage />
+        return <FlashPage devices={devices} />
       case 'root':
         return <RootPage />
       case 'modules':
