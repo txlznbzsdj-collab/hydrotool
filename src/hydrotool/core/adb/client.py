@@ -12,6 +12,20 @@ from typing import Optional
 
 from hydrotool.core.device import DeviceInfo, DeviceMode
 
+# getprop 属性名 → DeviceInfo 字段映射
+_PROP_MAP = {
+    "serial": "ro.serialno",
+    "model": "ro.product.model",
+    "brand": "ro.product.brand",
+    "android_version": "ro.build.version.release",
+    "build_version": "ro.build.display.id",
+    "build_fingerprint": "ro.build.fingerprint",
+    "security_patch": "ro.build.version.security_patch",
+    "sdk": "ro.build.version.sdk",
+    "bootloader_unlocked": "ro.boot.verifiedbootstate",
+    "current_slot": "ro.boot.slot_suffix",
+}
+
 
 class AdbError(Exception):
     """ADB 操作异常"""
@@ -90,65 +104,99 @@ class AdbClient:
         return any(d["status"] == "device" for d in devices)
 
     async def get_device_info(self, serial: Optional[str] = None) -> DeviceInfo:
-        """获取设备详细信息"""
+        """获取设备详细信息（批量 getprop 优化，一次 ADB 调用）"""
         serial_args = ["-s", serial] if serial else []
         info = DeviceInfo()
 
-        # 获取系统属性
-        props_to_fetch = {
-            "serial": "ro.serialno",
-            "model": "ro.product.model",
-            "brand": "ro.product.brand",
-            "android_version": "ro.build.version.release",
-            "build_version": "ro.build.display.id",
-            "security_patch": "ro.build.version.security_patch",
-            "sdk": "ro.build.version.sdk",
-        }
+        if serial:
+            info.serial = serial
 
-        for attr, prop in props_to_fetch.items():
-            try:
-                value = await self._run(
-                    *serial_args, "shell", "getprop", prop, timeout=5
-                )
-                if attr == "sdk":
-                    setattr(info, attr, int(value) if value.isdigit() else 0)
-                else:
-                    setattr(info, attr, value)
-            except AdbError:
-                pass
+        # 批量获取所有 getprop 属性（一次 ADB 调用）
+        try:
+            props_raw = await self._run(*serial_args, "shell", "getprop", timeout=10)
+            if props_raw:
+                props = {}
+                for line in props_raw.strip().split("\n"):
+                    line = line.strip()
+                    if "]: [" in line:
+                        # Format: [key]: [value]
+                        try:
+                            key = line.split("]: [")[0].lstrip("[")
+                            val = line.split("]: [")[1].rstrip("]")
+                            props[key] = val
+                        except Exception:
+                            pass
 
-        # 获取内核版本
+                for attr, prop_key in _PROP_MAP.items():
+                    if prop_key in props:
+                        setattr(info, attr, props[prop_key])
+        except AdbError:
+            pass
+
+        # SDK 转 int
+        if hasattr(info, 'sdk') and isinstance(info.sdk, str) and info.sdk.isdigit():
+            info.sdk = int(info.sdk)
+
+        # 检测 Bootloader
+        try:
+            bl = info.bootloader_unlocked
+            info.bootloader_unlocked = str(bl).lower() != "green" if bl else False
+        except Exception:
+            pass
+
+        # 检测 AB 槽位
+        try:
+            slot = info.current_slot
+            if slot:
+                info.ab_support = True
+                info.current_slot = str(slot).replace("_", "").upper()
+        except Exception:
+            pass
+
+        # 内核版本
         try:
             uname = await self._run(*serial_args, "shell", "uname", "-r", timeout=5)
             info.kernel_version = uname
         except AdbError:
             pass
 
-        # 检测 Bootloader 状态
+        # 电池信息
         try:
-            bl_info = await self._run(*serial_args, "shell", "getprop", "ro.boot.verifiedbootstate", timeout=5)
-            info.bootloader_unlocked = bl_info.lower() != "green"
+            bat = await self._run(*serial_args, "shell", "dumpsys", "battery", timeout=5)
+            for line in bat.split("\n"):
+                if "level:" in line:
+                    try: info.battery_level = int(line.strip().split(":")[1].strip())
+                    except: pass
         except AdbError:
             pass
 
-        # 检测 AB 槽位
+        # 存储信息 (df /data)
         try:
-            slot = await self._run(*serial_args, "shell", "getprop", "ro.boot.slot_suffix", timeout=5)
-            if slot:
-                info.ab_support = True
-                info.current_slot = slot.replace("_", "").upper()
-        except AdbError:
+            df = await self._run(*serial_args, "shell", "df", "/data", timeout=5)
+            parts = df.strip().split("\n")[-1].split()
+            if len(parts) >= 4:
+                info.storage_total = int(parts[1]) * 1024  # KB -> bytes
+                info.storage_used = int(parts[2]) * 1024
+        except Exception:
             pass
 
-        # 检测 Root 状态
+        # RAM 总量
         try:
-            await self._run(*serial_args, "shell", "su", "-c", "id", timeout=5)
-            info.root_method = "su"
-        except AdbError:
+            mem = await self._run(*serial_args, "shell", "cat", "/proc/meminfo", timeout=5)
+            for line in mem.split("\n"):
+                if "MemTotal:" in line:
+                    kb = ''.join(c for c in line if c.isdigit())
+                    if kb: info.ram_total = int(kb) * 1024
+                    break
+        except Exception:
             pass
 
-        if serial:
-            info.serial = serial
+        # CPU 核心数
+        try:
+            cores = await self._run(*serial_args, "shell", "getconf", "_NPROCESSORS_ONLN", timeout=5)
+            info.cpu_cores = int(cores.strip()) if cores.strip().isdigit() else 0
+        except Exception:
+            pass
 
         return info
 

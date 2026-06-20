@@ -60,7 +60,6 @@ def info(serial: Optional[str], json_output: bool):
         ("Bootloader", "🔓 已解锁" if device_info.bootloader_unlocked else "🔒 已锁定"),
         ("A/B 分区", "✅ 支持" if device_info.ab_support else "❌ 不支持"),
         ("当前槽位", device_info.current_slot or "-"),
-        ("Root 状态", f"✅ {device_info.root_method}" if device_info.root_method else "❌ 未 Root"),
     ]
 
     for attr, value in rows:

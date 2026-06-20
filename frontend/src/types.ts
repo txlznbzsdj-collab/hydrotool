@@ -7,9 +7,15 @@ export interface Device {
   type: 'adb' | 'fastboot'
   status?: string
   bootloader_unlocked?: boolean
-  root_method?: string
   current_slot?: string
   mode?: string
+  build_fingerprint?: string
+  security_patch?: string
+  battery_level?: number
+  storage_total?: number
+  storage_used?: number
+  ram_total?: number
+  cpu_cores?: number
 }
 
 export interface FastbootDevice {
@@ -20,9 +26,7 @@ export interface FastbootDevice {
   current_slot?: string
 }
 
-export type Page = 'dashboard' | 'ai-auto' | 'flash' | 'root' | 'modules'
-
-export type RootMethod = 'magisk' | 'kernelsu' | 'apatch'
+export type Page = 'dashboard' | 'ai-auto' | 'flash' | 'root' | 'modules' | 'tools' | 'settings'
 
 export type AiTarget = 'detect' | 'root' | 'flash' | 'unbrick'
 

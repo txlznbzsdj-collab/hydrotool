@@ -70,18 +70,10 @@ async def device_status_websocket(websocket: WebSocket):
             for d in adb_devices[:5]:  # 最多 5 台
                 if d["status"] == "device":
                     try:
-                        info = await adb.get_device_info(d["serial"])
-                        mode = await adb.get_mode(d["serial"])
                         devices_info.append({
                             "serial": d["serial"],
-                            "model": info.model,
-                            "brand": info.brand,
-                            "android_version": info.android_version,
-                            "mode": mode.name,
-                            "mode_label": MODE_LABELS.get(mode, ""),
-                            "bootloader_unlocked": info.bootloader_unlocked,
-                            "root_method": info.root_method or "",
                             "type": "adb",
+                            "status": d["status"],
                         })
                     except Exception:
                         devices_info.append({

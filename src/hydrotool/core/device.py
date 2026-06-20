@@ -41,26 +41,36 @@ class DeviceInfo:
         brand: str = "",
         android_version: str = "",
         build_version: str = "",
+        build_fingerprint: str = "",
         security_patch: str = "",
         kernel_version: str = "",
         bootloader_unlocked: bool = False,
         ab_support: bool = False,
         current_slot: str = "",
-        root_method: str = "",
         sdk: int = 0,
+        battery_level: int = -1,
+        storage_total: int = 0,
+        storage_used: int = 0,
+        ram_total: int = 0,
+        cpu_cores: int = 0,
     ):
         self.serial = serial
         self.model = model
         self.brand = brand
         self.android_version = android_version
         self.build_version = build_version
+        self.build_fingerprint = build_fingerprint
         self.security_patch = security_patch
         self.kernel_version = kernel_version
         self.bootloader_unlocked = bootloader_unlocked
         self.ab_support = ab_support
         self.current_slot = current_slot
-        self.root_method = root_method
         self.sdk = sdk
+        self.battery_level = battery_level
+        self.storage_total = storage_total
+        self.storage_used = storage_used
+        self.ram_total = ram_total
+        self.cpu_cores = cpu_cores
 
     @property
     def is_connected(self) -> bool:
@@ -73,13 +83,18 @@ class DeviceInfo:
             "brand": self.brand,
             "android_version": self.android_version,
             "build_version": self.build_version,
+            "build_fingerprint": self.build_fingerprint,
             "security_patch": self.security_patch,
             "kernel_version": self.kernel_version,
             "bootloader_unlocked": self.bootloader_unlocked,
             "ab_support": self.ab_support,
             "current_slot": self.current_slot,
-            "root_method": self.root_method,
             "sdk": self.sdk,
+            "battery_level": self.battery_level,
+            "storage_total": self.storage_total,
+            "storage_used": self.storage_used,
+            "ram_total": self.ram_total,
+            "cpu_cores": self.cpu_cores,
         }
 
     def __repr__(self) -> str:

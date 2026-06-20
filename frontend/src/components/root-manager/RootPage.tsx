@@ -8,10 +8,9 @@ import {
   ArrowRight,
   Sparkles,
 } from 'lucide-react'
-import type { RootMethod } from '@/types'
 
 const ROOT_METHODS: {
-  id: RootMethod
+  id: string
   name: string
   desc: string
   tag: string

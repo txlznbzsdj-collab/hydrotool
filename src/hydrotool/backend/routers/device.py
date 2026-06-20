@@ -39,7 +39,6 @@ async def list_devices():
                     android_version=info.android_version or "",
                     sdk=info.sdk or 0,
                     bootloader_unlocked=info.bootloader_unlocked,
-                    root_method=info.root_method or "",
                     current_slot=info.current_slot or "",
                 )
             except Exception:

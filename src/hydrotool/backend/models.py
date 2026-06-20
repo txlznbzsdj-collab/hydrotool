@@ -21,13 +21,18 @@ class DeviceInfoResponse(BaseModel):
     brand: str = ""
     android_version: str = ""
     build_version: str = ""
+    build_fingerprint: str = ""
     security_patch: str = ""
     kernel_version: str = ""
     bootloader_unlocked: bool = False
     ab_support: bool = False
     current_slot: str = ""
-    root_method: str = ""
     sdk: int = 0
+    battery_level: int = -1
+    storage_total: int = 0
+    storage_used: int = 0
+    ram_total: int = 0
+    cpu_cores: int = 0
 
 
 class DeviceListItem(BaseModel):
@@ -40,7 +45,6 @@ class DeviceListItem(BaseModel):
     android_version: str = ""
     sdk: int = 0
     bootloader_unlocked: Optional[bool] = None
-    root_method: str = ""
     current_slot: str = ""
     mode: str = ""
 
@@ -157,19 +161,6 @@ class FlashTaskResponse(BaseModel):
 # ============================================================
 # Root 模型
 # ============================================================
-
-class RootStatusResponse(BaseModel):
-    """Root 状态响应"""
-    is_rooted: bool
-    root_method: str = ""
-    bootloader_unlocked: bool = False
-    can_root: bool = False
-
-
-class RootAutoRequest(BaseModel):
-    """一键 Root 请求"""
-    serial: Optional[str] = None
-    keep_boot: bool = False
 
 
 # ============================================================

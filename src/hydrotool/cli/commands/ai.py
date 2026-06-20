@@ -177,8 +177,7 @@ async def _detect_device(serial: Optional[str]) -> bool:
                 console.print(f"  🔓 Bootloader: 已解锁")
             else:
                 console.print(f"  🔒 Bootloader: 已锁定")
-            if info.root_method:
-                console.print(f"  🛡️ Root: 已获取 ({info.root_method})")
+            if info.bootloader_unlocked:
             return True
 
     # Fastboot

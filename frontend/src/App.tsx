@@ -6,6 +6,8 @@ import { AiAutoPage } from '@/components/ai/AiAutoPage'
 import { FlashPage } from '@/components/flash/FlashPage'
 import { RootPage } from '@/components/root-manager/RootPage'
 import { ModulePage } from '@/components/modules/ModulePage'
+import { ToolsPage } from '@/components/tools/ToolsPage'
+import { SettingsPage } from '@/components/settings/SettingsPage'
 import type { Page, Device } from '@/types'
 
 function App() {
@@ -37,16 +39,16 @@ function App() {
         if (data.type === 'device_status' && data.devices?.length > 0) {
           setDevices(data.devices.map((d: any) => ({
             serial: d.serial,
-            model: d.model,
-            brand: d.brand,
-            type: d.type,
+            type: d.type || 'adb',
             status: d.status,
           })))
         }
       } catch {}
     }
 
-    const interval = setInterval(fetchDevices, 5000)
+    const interval = setInterval(() => {
+      if (!connected) fetchDevices()
+    }, 10000)
     return () => { ws.close(); clearInterval(interval) }
   }, [fetchDevices])
 
@@ -62,6 +64,10 @@ function App() {
         return <RootPage />
       case 'modules':
         return <ModulePage />
+      case 'tools':
+        return <ToolsPage />
+      case 'settings':
+        return <SettingsPage />
     }
   }
 

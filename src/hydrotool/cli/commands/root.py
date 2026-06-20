@@ -33,18 +33,22 @@ def run_async(coro):
 @root.command()
 @click.option("-s", "--serial", default=None, help="设备序列号")
 def status(serial: Optional[str]):
-    """检测设备 Root 状态"""
-    info = run_async(adb.get_device_info(serial))
-    table = Table(title="🛡️ Root 状态")
+    """查看设备信息"""
+    run_async(_show_device_info(serial))
+
+
+async def _show_device_info(serial: Optional[str]):
+    import asyncio
+    info = await adb.get_device_info(serial)
+    table = Table(title="📱 设备信息")
     table.add_column("项目", style="cyan")
     table.add_column("状态", style="white")
-    table.add_row("Root 权限", "✅ 已获取" if info.root_method else "❌ 未 Root")
-    table.add_row("Root 方案", info.root_method or "-")
+    table.add_row("型号", f"{info.brand} {info.model}" if info.brand else "-")
+    table.add_row("Android 版本", info.android_version or "-")
+    table.add_row("SDK", str(info.sdk) if info.sdk else "-")
     table.add_row("Bootloader", "🔓 已解锁" if info.bootloader_unlocked else "🔒 已锁定")
+    table.add_row("槽位", info.current_slot or "-")
     console.print(table)
-
-    if not info.bootloader_unlocked:
-        console.print("\n[yellow]⚠️ Bootloader 未解锁，需要先解锁才能 Root[/yellow]")
 
 
 @root.command()
@@ -136,7 +140,7 @@ def auto(serial: Optional[str], keep_boot: bool):
     console.print("[1/3] 检测设备状态...")
     info = run_async(adb.get_device_info(serial))
 
-    if info.root_method:
+    if info.bootloader_unlocked:
         console.print("[green]✅ 设备已 Root[/green]")
         return
 
