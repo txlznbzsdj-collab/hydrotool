@@ -56,6 +56,32 @@ def ai():
     """AI 自动模式：自动检测环境+设备状态+执行"""
 
 
+@cli.command()
+@click.option("-p", "--port", default=8000, help="服务端口 (默认: 8000)")
+@click.option("--no-browser", is_flag=True, help="不自动打开浏览器")
+def serve(port: int, no_browser: bool):
+    """启动图形界面（Web UI）
+    
+    启动后端 API 服务，并在浏览器中打开图形界面。
+    CLI 命令组也可继续使用。
+    """
+    import webbrowser
+    import uvicorn
+    import threading
+
+    url = f"http://localhost:{port}"
+
+    if not no_browser:
+        def _open():
+            import time
+            time.sleep(1)
+            webbrowser.open(url)
+        threading.Thread(target=_open, daemon=True).start()
+
+    click.echo(f"🚀 HydroTool Web UI: {url}")
+    uvicorn.run("hydrotool.backend.app:app", host="0.0.0.0", port=port, log_level="warning")
+
+
 # ============================================================
 # 导入命令实现模块（触发装饰器注册命令）
 # ============================================================

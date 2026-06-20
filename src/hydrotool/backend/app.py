@@ -1,24 +1,45 @@
 """
 FastAPI 后端入口
 
-提供 REST API 和 WebSocket 服务，使 Web UI 和 CLI 共享同一套核心能力。
+提供 REST API、WebSocket 服务，以及 Web UI 静态文件服务。
 """
 
+import os
+import sys
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 from hydrotool.backend.routers import device, flash, root, system
 from hydrotool.backend.websocket.device_stream import router as ws_router
 
 
+def _find_frontend_dir() -> Path:
+    """查找前端静态文件目录（兼容 PyInstaller 打包）"""
+    # PyInstaller 打包后
+    if hasattr(sys, "_MEIPASS"):
+        return Path(sys._MEIPASS) / "frontend" / "dist"
+
+    # 开发环境
+    candidates = [
+        Path(__file__).resolve().parent.parent.parent.parent / "frontend" / "dist",
+        Path.cwd() / "frontend" / "dist",
+    ]
+    for d in candidates:
+        if (d / "index.html").exists():
+            return d
+    return candidates[0]
+
+FRONTEND_DIR = _find_frontend_dir()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """应用生命周期管理"""
-    # 启动时
     yield
-    # 关闭时
 
 
 app = FastAPI(
@@ -28,18 +49,22 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS 配置（允许 Web UI 跨域访问）
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 开发阶段允许所有来源
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 注册路由
+# API 路由
 app.include_router(system.router, prefix="/api", tags=["系统"])
 app.include_router(device.router, prefix="/api/devices", tags=["设备"])
 app.include_router(flash.router, prefix="/api/flash", tags=["刷机"])
 app.include_router(root.router, prefix="/api/root", tags=["Root"])
 app.include_router(ws_router, prefix="/ws", tags=["WebSocket"])
+
+# 静态文件（Web UI）
+if FRONTEND_DIR.exists() and (FRONTEND_DIR / "index.html").exists():
+    app.mount("/assets", StaticFiles(directory=FRONTEND_DIR / "assets"), name="assets")
+    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")

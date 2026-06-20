@@ -1,18 +1,17 @@
-# HydroTool 跨平台打包工作流
+# HydroTool 跨平台打包 — GUI 安装程序
 #
-# 当推送 v* 标签时自动触发：
-# - Windows → hydrotool.exe
-# - Linux   → hydrotool 可执行文件
-# - macOS   → hydrotool macOS 可执行文件
-#
-# 产物自动上传到 GitHub Release
+# 推 v* 标签自动触发:
+# - 构建 Web UI (React + Vite)
+# - PyInstaller 打包 Python + 前端 (单文件 exe)
+# - Windows: Inno Setup GUI 安装向导
+# - Linux/macOS: 压缩包
+# - 上传到 GitHub Release
 
 name: 跨平台打包
 
 on:
   push:
-    tags:
-      - "v*"
+    tags: ["v*"]
   workflow_dispatch:
 
 jobs:
@@ -22,24 +21,35 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
 
-      - name: 安装 Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+      - name: 构建 Web UI
+        run: |
+          cd frontend
+          npm install
+          npm run build
 
-      - name: 安装依赖
+      - name: 安装 Python 依赖
         run: |
           pip install -e ".[web]"
           pip install pyinstaller
 
-      - name: PyInstaller 打包
+      - name: PyInstaller 打包 (含前端)
         run: pyinstaller packaging/hydrotool-windows.spec
 
-      - name: 上传 hydrotool.exe 到 Release
+      - name: Inno Setup GUI 安装程序
+        run: |
+          choco install innosetup --version=6.4.1 -y
+          iscc packaging/hydrotool-setup.iss
+
+      - name: 上传到 Release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/hydrotool.exe
+          files: |
+            dist/Output/hydrotool-setup-*.exe
 
   build-linux:
     runs-on: ubuntu-latest
@@ -47,13 +57,18 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
 
-      - name: 安装 Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+      - name: 构建 Web UI
+        run: |
+          cd frontend
+          npm install
+          npm run build
 
-      - name: 安装依赖
+      - name: 安装 Python 依赖
         run: |
           pip install -e ".[web]"
           pip install pyinstaller
@@ -61,10 +76,8 @@ jobs:
       - name: PyInstaller 打包
         run: pyinstaller packaging/hydrotool-linux.spec
 
-      - name: 压缩二进制文件
-        run: |
-          cd dist
-          tar czf hydrotool-linux-x86_64.tar.gz hydrotool
+      - name: 压缩
+        run: cd dist && tar czf hydrotool-linux-x86_64.tar.gz hydrotool
 
       - name: 上传到 Release
         uses: softprops/action-gh-release@v2
@@ -77,13 +90,18 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
 
-      - name: 安装 Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+      - name: 构建 Web UI
+        run: |
+          cd frontend
+          npm install
+          npm run build
 
-      - name: 安装依赖
+      - name: 安装 Python 依赖
         run: |
           pip install -e ".[web]"
           pip install pyinstaller
@@ -91,10 +109,8 @@ jobs:
       - name: PyInstaller 打包
         run: pyinstaller packaging/hydrotool-macos.spec
 
-      - name: 压缩 .app
-        run: |
-          cd dist
-          zip -r hydrotool-macos.zip hydrotool.app
+      - name: 压缩
+        run: cd dist && zip -r hydrotool-macos.zip hydrotool.app
 
       - name: 上传到 Release
         uses: softprops/action-gh-release@v2

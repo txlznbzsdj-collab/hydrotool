@@ -9,7 +9,7 @@ a = Analysis(
     ['../src/hydrotool/cli/main.py'],
     pathex=['..'],
     binaries=[],
-    datas=[],
+    datas=[('../frontend/dist', 'frontend/dist'), ('../frontend/dist/index.html', 'frontend/dist')],
     hiddenimports=[
         'hydrotool',
         'hydrotool.cli',
