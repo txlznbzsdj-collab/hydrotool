@@ -66,7 +66,7 @@ function App() {
   }
 
   return (
-    <TooltipProvider delayDuration={200}>
+    <TooltipProvider delay={200}>
       <div className="flex h-screen bg-background overflow-hidden">
         <Sidebar
           page={page}

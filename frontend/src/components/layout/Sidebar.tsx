@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react'
 import {
   LayoutDashboard,
   Cpu,
@@ -33,16 +32,6 @@ const NAV_ITEMS: { id: Page; label: string; icon: typeof LayoutDashboard }[] = [
 ]
 
 export function Sidebar({ page, onNavigate, devices, connected, collapsed, onToggleCollapse }: SidebarProps) {
-  const [scrolled, setScrolled] = useState(false)
-
-  useEffect(() => {
-    const el = document.getElementById('sidebar-scroll')
-    if (!el) return
-    const handler = () => setScrolled(el.scrollTop > 8)
-    el.addEventListener('scroll', handler)
-    return () => el.removeEventListener('scroll', handler)
-  }, [])
-
   return (
     <aside
       className={`relative flex flex-col bg-sidebar border-r border-sidebar-border transition-all duration-300 ease-in-out ${
@@ -82,7 +71,7 @@ export function Sidebar({ page, onNavigate, devices, connected, collapsed, onTog
           {NAV_ITEMS.map((item) => {
             const active = page === item.id
             return collapsed ? (
-              <Tooltip key={item.id} delayDuration={200}>
+              <Tooltip key={item.id} delay={200}>
                 <TooltipTrigger asChild>
                   <button
                     onClick={() => onNavigate(item.id)}
@@ -121,7 +110,7 @@ export function Sidebar({ page, onNavigate, devices, connected, collapsed, onTog
       <div className={`border-t border-sidebar-border ${collapsed ? 'p-2' : 'px-4 py-3'}`}>
         <Separator className="mb-3 bg-sidebar-border" />
         {collapsed ? (
-          <Tooltip delayDuration={200}>
+          <Tooltip delay={200}>
             <TooltipTrigger asChild>
               <div className="flex items-center justify-center">
                 <div

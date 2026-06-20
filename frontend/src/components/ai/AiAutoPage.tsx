@@ -3,16 +3,13 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Separator } from '@/components/ui/separator'
 import {
   Cpu,
   Monitor,
-  Target,
   Play,
   Loader2,
   CheckCircle2,
   AlertTriangle,
-  Wrench,
   Shield,
   Zap,
   Heart,
